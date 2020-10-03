@@ -2,5 +2,5 @@ matplotlib
 numpy
 Pillow
 argparse
-pickle
 scikit-surprise
+seaborn

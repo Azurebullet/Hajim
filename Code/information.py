@@ -16,6 +16,7 @@ class Information():
         self.courses = courses
         self.demograph = demograph
         self.studentID = studentID
+
         if gender is None:
             self.gender = 'None'
         else:
@@ -34,21 +35,23 @@ class Information():
 #     # train = Train(pd.read_pickle('./Saved Models/Dataframes/courses.pkl'))
 #     train.init(pd.read_pickle('./Saved Models/Dataframes/demograph.pkl'))
 #     train.surprise_train()
+        if studentID is not None:
+            studentID = float(studentID)
+            # print(studentID)
+            student_year = terms[(terms.SubjectID == studentID)
+                                & (terms.termsorder == termsorder)]
+            student_year = student_year[['SubjectID', 'Year Term ID']]
 
-        studentID = float(studentID)
-        # print(studentID)
-        student_year = terms[(terms.SubjectID == studentID)
-                              & (terms.termsorder == termsorder)]
-        student_year = student_year[['SubjectID', 'Year Term ID']]
-
-        student = student_year.iloc[0]['SubjectID']
-        find_year = student_year.iloc[0]['Year Term ID']
-        major_find = courses[(courses['SubjectID'] == student) & (
-            courses['Year Term ID'] == find_year)]
-        # major=courses[(courses['SubjectID']==studentID)&(courses['Year Term ID']==student_year['Year Term ID'])]['Ps1 Major1 Code']
-        # print(major_find)
-        major = major_find['Ps1 Major1 Code'].tolist()[0]
-        self.major = major
+            student = student_year.iloc[0]['SubjectID']
+            find_year = student_year.iloc[0]['Year Term ID']
+            major_find = courses[(courses['SubjectID'] == student) & (
+                courses['Year Term ID'] == find_year)]
+            # major=courses[(courses['SubjectID']==studentID)&(courses['Year Term ID']==student_year['Year Term ID'])]['Ps1 Major1 Code']
+            # print(major_find)
+            major = major_find['Ps1 Major1 Code'].tolist()[0]
+            self.major = major
+        else:
+            self.major=None
         self.graph = graph
 
         if year is None:
@@ -84,21 +87,28 @@ class Information():
             # print(counter.values())
             # probation_number_get.to_csv(
                 # './Information/probation_frequency.csv', sep='\t', encoding='utf-8')
-
+            # print(student_list)
             for i in student_list:
                 studentinfo = self.terms.loc[self.terms['SubjectID'] == i]
                 if(self.majortest(i) & self.probationtest(studentinfo)):
                     similar_student.append(i)
                     # 2
-                    # print(similar_student)
+            # print(similar_student)
             outputcourse = self.findcourses(similar_student, int(self.termsorder))
-        # print(outputcourse)
+            # print(outputcourse)
             import collections
             # counter=collections.Counter(outputcourse)
-        # print(outputcourse)
+            # print(outputcourse)
             grade_list = outputcourse.groupby('Course Name', as_index=False)[
                 'Grade Value'].mean()
-            # print(grade_list)
+            print(outputcourse.dtypes)
+            sd_list=outputcourse.groupby('Course Name').std()
+            sd_list.rename(columns={'Grade Value': 'SD'
+                                        },
+                            inplace=True)
+
+            grade_list['SD']=sd_list['SD'].tolist()
+ 
             course_list = outputcourse['Course Name'].tolist()
             counter = collections.Counter(course_list)
             # print(counter)
@@ -107,14 +117,15 @@ class Information():
             top_8_list = [i[0] for i in top_8]
             # # print(top_5_list)
             top_8_score = pd.DataFrame(
-                columns=['Course Name', 'Grade Value', 'Frequency'])
+                columns=['Course Name', 'Grade Value', 'Frequency','SD'])
             for i in top_8_list:
                 test = grade_list.loc[grade_list['Course Name'] == i, [
-                    'Course Name', 'Grade Value']]
+                    'Course Name','Grade Value','SD']]
                 frame = [top_8_score, test]
                 top_8_score = pd.concat(frame,sort=True)
             top_8_frequency = [i[1] for i in top_8]
             top_8_score['Frequency'] = top_8_frequency
+
             top_8_score.rename(columns={'Grade Value': 'Mean Grade Value'
                                         },
                             inplace=True)
@@ -128,58 +139,59 @@ class Information():
                              palette="Blues_d", data=top_8_score)
             score = top_8_score['Mean Grade Value'].tolist()
             freq = top_8_score['Frequency'].tolist()
+            sd=top_8_score['SD'].tolist()
             plt.rcParams.update({'font.size': 7})
             distance = freq[0]/10
-            plt.annotate(str(round(score[0], 2)), xy=(0, freq[0]),
+            plt.annotate('( '+str(round(score[0], 2))+','+str(round(sd[0], 2))+' )', xy=(0, freq[0]),
                          xytext=(0, freq[0]+distance), ha='center',
                          bbox={'boxstyle': 'round', 'pad': 0.5, 'facecolor':
                                'orange', 'edgecolor': 'orange', 'alpha': 0.6},
                          arrowprops={'arrowstyle': "wedge,tail_width=0.5",
                                      'alpha': 0.6, 'color': 'orange'})
-            plt.annotate(str(round(score[1], 2)), xy=(1, freq[1]),
+            plt.annotate('( '+str(round(score[1], 2))+','+str(round(sd[1], 2))+' )', xy=(1, freq[1]),
                          xytext=(1, freq[1]+distance), ha='center',
                          bbox={'boxstyle': 'round', 'pad': 0.5, 'facecolor':
                                'orange', 'edgecolor': 'orange', 'alpha': 0.6},
                          arrowprops={'arrowstyle': "wedge,tail_width=0.5",
                                      'alpha': 0.6, 'color': 'orange'})
-            plt.annotate(str(round(score[2], 2)), xy=(2, freq[2]),
+            plt.annotate('( '+str(round(score[2], 2))+','+str(round(sd[2], 2))+' )', xy=(2, freq[2]),
                          xytext=(2, freq[2]+distance), ha='center',
                          bbox={'boxstyle': 'round', 'pad': 0.5, 'facecolor':
                                'orange', 'edgecolor': 'orange', 'alpha': 0.6},
                          arrowprops={'arrowstyle': "wedge,tail_width=0.5",
                                      'alpha': 0.6, 'color': 'orange'})
-            plt.annotate(str(round(score[3], 2)), xy=(3, freq[3]),
+            plt.annotate('( '+str(round(score[3], 2))+','+str(round(sd[3], 2))+' )', xy=(3, freq[3]),
                          xytext=(3, freq[3]+distance), ha='center',
                          bbox={'boxstyle': 'round', 'pad': 0.5, 'facecolor':
                                'orange', 'edgecolor': 'orange', 'alpha': 0.6},
                          arrowprops={'arrowstyle': "wedge,tail_width=0.5",
                                      'alpha': 0.6, 'color': 'orange'})
-            plt.annotate(str(round(score[4], 2)), xy=(4, freq[4]),
+            plt.annotate('( '+str(round(score[4], 2))+','+str(round(sd[4], 2))+' )', xy=(4, freq[4]),
                          xytext=(4, freq[4]+distance), ha='center',
                          bbox={'boxstyle': 'round', 'pad': 0.5, 'facecolor':
                                'orange', 'edgecolor': 'orange', 'alpha': 0.6},
                          arrowprops={'arrowstyle': "wedge,tail_width=0.5",
                                      'alpha': 0.6, 'color': 'orange'})
-            plt.annotate(str(round(score[5], 2)), xy=(5, freq[5]),
+            plt.annotate('( '+str(round(score[5], 2))+','+str(round(sd[5], 2))+' )', xy=(5, freq[5]),
                          xytext=(5, freq[5]+distance), ha='center',
                          bbox={'boxstyle': 'round', 'pad': 0.5, 'facecolor':
                                'orange', 'edgecolor': 'orange', 'alpha': 0.6},
                          arrowprops={'arrowstyle': "wedge,tail_width=0.5",
                                      'alpha': 0.6, 'color': 'orange'})
-            plt.annotate(str(round(score[6], 2)), xy=(6, freq[6]),
+            plt.annotate('( '+str(round(score[6], 2))+','+str(round(sd[6], 2))+' )', xy=(6, freq[6]),
                          xytext=(6, freq[6]+distance), ha='center',
                          bbox={'boxstyle': 'round', 'pad': 0.5, 'facecolor':
                                'orange', 'edgecolor': 'orange', 'alpha': 0.6},
                          arrowprops={'arrowstyle': "wedge,tail_width=0.5",
                                      'alpha': 0.6, 'color': 'orange'})
-            plt.annotate(str(round(score[7], 2)), xy=(7, freq[7]),
+            plt.annotate('( '+str(round(score[7], 2))+','+str(round(sd[7], 2))+' )', xy=(7, freq[7]),
                          xytext=(7, freq[7]+distance), ha='center',
                          bbox={'boxstyle': 'round', 'pad': 0.5, 'facecolor':
                                'orange', 'edgecolor': 'orange', 'alpha': 0.6},
                          arrowprops={'arrowstyle': "wedge,tail_width=0.5",
                                      'alpha': 0.6, 'color': 'orange'})
 
-            plt.annotate("The number in the yellow label is the mean grade", xy=(4, freq[6]),
+            plt.annotate("The number in the yellow label is the mean grade and standard deviation", xy=(4, freq[6]),
                          xytext=(4, freq[0]), ha='center',
                          bbox={'boxstyle': 'square', 'pad': 0.5, 'facecolor':
                                'green', 'edgecolor': 'green', 'alpha': 0.6}
@@ -190,6 +202,7 @@ class Information():
         # g = plt.figure(2)
         # FILTER DATA
         if(self.graph == 'course'):
+
             current_terms = self.terms
             if(self.probation != 'None'):
                 current_terms = self.probationfilter(
@@ -199,10 +212,12 @@ class Information():
             if(self.gender != 'None'):
                 current_terms = self.genderfilter(current_terms, self.gender)
             if(self.year != 'None'):
+                # print(self.demograph['year'].tolist())
                 current_terms = self.yearfilter(current_terms, self.year)
             if(self.ethnic != 'None'):
                 current_terms = self.ethnicfilter(current_terms, self.ethnic)
-            if(current_terms.empty == False):
+            # print(current_terms.shape)
+            if(current_terms.shape[0]> 0):
                 graph2_student_list = current_terms['SubjectID']
                 course_data = self.demograph[self.demograph['SubjectID'].isin(
                     graph2_student_list)]
@@ -230,16 +245,17 @@ class Information():
                 # print(input)
                 output = self.disc_course(input)
                 print(output)
-                output.to_csv('Saved Models/Information/disc_performances.csv', sep='\t', encoding='utf-8')
+                output.to_csv('Saved Models/Information/disc_performances_.csv', sep='\t', encoding='utf-8')
                 if self.value == 'SD':
                     labels = output.index.values
-                    grades = output['frequency'].tolist()
-                    d = {'Degree Major1 Discipline Code': labels, 'frequency': grades}
+                    grades = output['Grade Value'].tolist()
+                    d = {'Degree Major1 Discipline Code': labels, 'Mean Grade': grades}
                     sns.set(style="whitegrid", font_scale=0.7)
-                    ax = sns.barplot(x="Degree Major1 Discipline Code", y="frequency",
+                    ax = sns.barplot(x="Degree Major1 Discipline Code", y="Mean Grade",
                                     palette="pastel", data=d)
-                    score = output['frequency'].tolist()
+                    score = output['Grade Value'].tolist()
                     freq = output['SD'].tolist()
+                    mean = output['frequency'].tolist()
                 else:
                     labels = output.index.values
                     grades = output['Grade Value'].tolist()
@@ -251,25 +267,25 @@ class Information():
                     freq = output['frequency'].tolist()
                 plt.rcParams.update({'font.size': 7})
                 distance = score[0]/15
-                plt.annotate(str(round(freq[0], 2)), xy=(0, score[0]),
+                plt.annotate('( '+str(round(mean[0], 2))+','+str(round(freq[0], 2))+' )', xy=(0, score[0]),
                             xytext=(0, score[0]+distance), ha='center',
                             bbox={'boxstyle': 'round', 'pad': 0.5, 'facecolor':
                                 'orange', 'edgecolor': 'orange', 'alpha': 0.6},
                             arrowprops={'arrowstyle': "wedge,tail_width=0.5",
                                         'alpha': 0.6, 'color': 'orange'})
-                plt.annotate(str(round(freq[1], 2)), xy=(1, score[1]),
+                plt.annotate('( '+str(round(mean[1], 2))+','+str(round(freq[1], 2))+' )',xy=(1, score[1]),
                             xytext=(1, score[1]+distance), ha='center',
                             bbox={'boxstyle': 'round', 'pad': 0.5, 'facecolor':
                                 'orange', 'edgecolor': 'orange', 'alpha': 0.6},
                             arrowprops={'arrowstyle': "wedge,tail_width=0.5",
                                         'alpha': 0.6, 'color': 'orange'})
-                plt.annotate(str(round(freq[2], 2)), xy=(2, score[2]),
+                plt.annotate('( '+str(round(mean[2], 2))+','+str(round(freq[2], 2))+' )', xy=(2, score[2]),
                             xytext=(2, score[2]+distance), ha='center',
                             bbox={'boxstyle': 'round', 'pad': 0.5, 'facecolor':
                                 'orange', 'edgecolor': 'orange', 'alpha': 0.6},
                             arrowprops={'arrowstyle': "wedge,tail_width=0.5",
                                         'alpha': 0.6, 'color': 'orange'})
-                plt.annotate(str(round(freq[3], 2)), xy=(3, score[3]),
+                plt.annotate('( '+str(round(mean[3], 2))+','+str(round(freq[3], 2))+' )', xy=(3, score[3]),
                             xytext=(3, score[3]+distance), ha='center',
                             bbox={'boxstyle': 'round', 'pad': 0.5, 'facecolor':
                                 'orange', 'edgecolor': 'orange', 'alpha': 0.6},
@@ -283,8 +299,14 @@ class Information():
 
                 title = "The course performance for students of different Discipline of "+self.course
                 if self.value == 'SD':
-                    plt.xlabel("The number in the yellow label is the Standard Deviation with filter probation:"+self.probation +
-                               ", ethnic: "+self.ethnic+", year: "+self.year+", country: "+self.country+", gender:"+self.gender)
+                    if self.year !='None':
+                        plt.xlabel("The number in the yellow label is the Frequency and SD with filter probation:"+self.probation +
+                               ", ethnic: "+self.ethnic+", year: "+self.year[0]+'~'+self.year[-1]+", country: "+self.country+", gender:"+self.gender)
+                        plt.ylabel("Mean Grade")                    
+                    else:
+                        plt.xlabel("The number in the yellow label is the Frequency and SD with filter probation:"+self.probation +
+                               ", ethnic: "+self.ethnic+", year:None"+", country: "+self.country+", gender:"+self.gender)
+                        plt.ylabel("Mean Grade")
                 else:
                     plt.xlabel("The number in the yellow label is the frequency with filter probation:"+self.probation +
                                ", ethnic: "+self.ethnic+", year: "+self.year+", country: "+self.country+", gender:"+self.gender)
@@ -292,7 +314,9 @@ class Information():
                 plt.show()
                 fig = ax.get_figure()
                 fig.savefig(
-                    'Saved Models/Information/disc_performance.png')
+                    'Saved Models/Information/disc_performance_.png')
+            else:
+                print('The rows of data is not enough after being filtered,please use less filters')
 
     def genderfilter(self, input, gender):
         mDemograph = self.demograph
@@ -317,6 +341,8 @@ class Information():
 
     def yearfilter(self, input, year_list):
         mDemograph = self.demograph
+        # print(year_list)
+        [float(i) for i in year_list]
         mDemograph = mDemograph[mDemograph['year'].isin(year_list)]
         candidate_list = mDemograph['SubjectID'].tolist()
         output = input[input['SubjectID'].isin(candidate_list)]
@@ -412,4 +438,3 @@ class Information():
                 frames = [course_out, current]
                 course_out = pd.concat(frames)
         return course_out
-        # print(current.keys())

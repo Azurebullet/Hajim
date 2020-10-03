@@ -19,6 +19,7 @@ class Train():
         self.invert = dict([[v,k] for k,v in self.convert.items()])
 
     def init_training_set(self, demograph):
+        # generate the training set
         course_index = -1
         grade_index = 25
         current_year_index = 2
@@ -47,8 +48,9 @@ class Train():
 
 
     def train_model(self):
-
+        # main training component
         def get_top_n(predictions, n=10):
+            # get prediction results
             top_n = collections.defaultdict(list)
             for uid, iid, true_r, est, _ in predictions:
                 top_n[uid].append((iid, est))
@@ -67,18 +69,22 @@ class Train():
         testset = trainset.build_anti_testset()
         print('Training started. Depends on your machine, this process may take more than an hour')
         algo.fit(trainset)
+        # cross validation
         output = surprise.model_selection.cross_validate(algo, data, verbose=True, n_jobs=-2, cv=3, measures=['rmse', 'mae','fcp'])
         predictions = algo.test(testset)
         dump_pred = get_top_n(predictions, n=30)
         with open('./Saved Models/test_pred.pkl', 'wb') as f:
             pickle.dump(dump_pred, f, protocol=pickle.HIGHEST_PROTOCOL)
+            # save the predictions to pkl
 
     def look_student(self, studentID, n=8):
+        # look at the prediction results given student ID
         with open('./Saved Models/test_pred.pkl', 'rb') as f:
             pred = pickle.load(f)
         rec_courses = pred[studentID]
 
         def truncate(n, decimals=0):
+            # keep 2 decimal places
             multiplier = 10 ** decimals
             return int(n * multiplier) / multiplier
 
@@ -89,4 +95,3 @@ class Train():
             if self.invert[course][:3] != 'MUR' and self.invert[course][:3] != 'MUE':
                 print(self.invert[course], truncate(grade, 2))
                 counter += 1
-        # print(self.courses[self.courses['SubjectID']==studentID][['Course Name', 'Grade Value']])

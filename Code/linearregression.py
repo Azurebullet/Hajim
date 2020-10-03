@@ -209,4 +209,3 @@ fig, ax = plot_confusion_matrix(conf_mat=multiclassThree,
                                 show_absolute=False,
                                 show_normed=True)
 plt.show()
-

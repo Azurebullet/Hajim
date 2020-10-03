@@ -18,9 +18,13 @@ class Explor():
 
     def Prob_Majors(self):
         # Exploratory Analysis -- Probation and Majors
-        Probed_Students = self.demograph[self.demograph['probation'] != 0]
+        Probed_Students = self.terms[self.terms['probation'] != 0]['SubjectID'].unique()
+        print(self.demograph['SubjectID'].nunique())
+        print(self.courses['SubjectID'].nunique())
+        print(self.terms['SubjectID'].nunique())
         Major_Population = self.demograph.groupby('B - Major1 Code')['B - Major1 Code'].count()
-        Major_Probation = Probed_Students.groupby('B - Major1 Code')['B - Major1 Code'].count()
+        Major_Probation = self.demograph[self.demograph['SubjectID'].isin(Probed_Students)] \
+                            .groupby('B - Major1 Code')['B - Major1 Code'].count()
         Hajim_Majors = ['BME', 'CHE', 'CSC','CSA', 'ECE', 'IDE', 'ES', 'ME', 'OPT']
         with open('./Saved Models/Major_Probation.csv', 'w') as f:
             f.write('Major' + ' ' + 'Percentage' + ' ' + 'Aboslute_Number\n')
@@ -36,7 +40,7 @@ class Explor():
                 out = name + ' ' + (Hajim_Prob[name]/Hajim_Popu[name]).astype(str) + ' ' + Hajim_Prob[name].astype(str)
                 f.write("%s\n" % out)
         print('Average probation rate for Hajim school is ' + (Hajim_Prob.sum()/Hajim_Popu.sum()).astype(str))
-        print('Average probation rate in general is ' + str(Probed_Students['SubjectID'].nunique()/courses['SubjectID'].nunique()))
+        print('Average probation rate in general is ' + str(len(Probed_Students)/self.courses['SubjectID'].nunique()))
 
     def Changing_Majors(self):
         def changed_major(ID):
@@ -55,11 +59,11 @@ class Explor():
                 pre_1, pre_2, aft_1, aft_2 = np.NaN, np.NaN, np.NaN, np.NaN
             for i in range(0, len(Term_Data)):
                 if Term_Data[i] < 2.0 and not Term_Data[i] == 0:
-                    if i-1 >= 0:
+                    if i-1 > 0:
                         if Term_Data[i-1] > 3.3:
                             break
                         pre_1 = Term_Data[i-1]
-                    if i-2 >= 0:
+                    if i-2 > 0:
                         pre_2 = Term_Data[i-2]
                     for j in range(i, len(Term_Data)):
                         if Term_Data[j] >= 2.0 and Term_Data[j] < 3.5:
@@ -79,10 +83,8 @@ class Explor():
                 GPA_Changed = GPA_Changed.append(find_grades(ID, True), ignore_index=True)
             else:
                 GPA_Unchanged = GPA_Unchanged.append(find_grades(ID, False), ignore_index=True)
-        GPA_Unchanged.fillna(value=GPA_Changed.mean(), inplace=True)
+        GPA_Unchanged.fillna(value=GPA_Unchanged.mean(), inplace=True)
         GPA_Changed.fillna(value=GPA_Changed.mean(), inplace=True)
-        print(GPA_Unchanged.shape)
-        print(GPA_Changed.shape)
         def graph_changing(GPA_Changed, GPA_Unchanged):
             data = [
                     go.Scatter(
@@ -104,6 +106,13 @@ class Explor():
             return
 
         graph_changing(GPA_Changed, GPA_Unchanged)
+        with open('./Saved Models/Culm_GPAs.csv','w') as f:
+            for index, rows in GPA_Unchanged.iterrows():
+                if not rows[1] == 0.0:
+                    f.write("%s\n" % str(round(rows[1], 2)))
+            for index, rows in GPA_Changed.iterrows():
+                if not rows[1] == 0.0:
+                    f.write("%s\n" % str(round(rows[1], 2)))
 
     def Heatmap(self):
         # Exploratory Analysis -- Heatmap
@@ -121,6 +130,18 @@ class Explor():
                 out = i + ' ' + General_Demo[i].astype(str)
                 f.write("%s\n" % out)
 
+    def Culm_GPA(self):
+        # Exploratory Analysis -- Outlier
+        Culm_GPAs = []
+        Probed_Students = self.terms[self.terms['probation'] != 0]['SubjectID'].unique()
+        #Probed_Students = self.terms['SubjectID'].unique()
+        for ID in Probed_Students:
+            Term_Data = self.terms[self.terms['SubjectID'] == ID]['Term GPA'].tolist()
+
+            Culm_GPAs.append(Term_Data[-1])
+        with open('./Saved Models/Culm_GPAs.csv','w') as f:
+            for gpas in Culm_GPAs:
+                f.write("%f\n" % gpas)
     def Sankey(self):
         prob_students = self.courses[self.courses['Ps1 Acad Standing Desc']=='PROBATION']['SubjectID']
         print(prob_students.shape)
@@ -153,4 +174,4 @@ class Explor():
                 writer.writerow([k, v])
 
     def analysis(self):
-        self.Sankey()
+        self.Changing_Majors()

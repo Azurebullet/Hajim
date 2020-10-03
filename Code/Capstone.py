@@ -11,7 +11,6 @@ from initialize import Init
 from train import Train
 from information import Information
 from exploratory import Explor
-import linearregression
 
 
 # initialize the program
@@ -22,8 +21,6 @@ parser.add_argument("--init", help="initilize the program",
 parser.add_argument("--explor", help="perform exploratory analysis",
                     action='store_true', default=False)
 parser.add_argument("--train", help="perform exploratory analysis",
-                    action='store_true', default=False)
-parser.add_argument("--linreg", help="perform linear regression model",
                     action='store_true', default=False)
 parser.add_argument("--student", help="type in the studnet ID",
                     type=int, default=None)
@@ -45,31 +42,36 @@ parser.add_argument("--current-term", type=int, default=3,
 parser.add_argument("--course-number", type=str, default=None)
 parser.add_argument("--probation-filter", type=str, default=None,
                     help="type 'yes' to just look at probation students")
-parser.add_argument("--num_of_rec_courses", type=int, default=8,
+parser.add_argument("--num-of-rec-courses", type=int, default=8,
                     help="the number of total recommended courses, range from 1-20")
 
 args = parser.parse_args()
 
+# initialize the database, can also be used to update the database
 if args.init:
     init = Init()
     terms, courses, demograph, termsinformation = init.preprocess()
 
-
+# exploratory analysis
 if args.explor:
     terms = pd.read_pickle('Saved Models/Dataframes/terms_in.pkl')
     courses = pd.read_pickle('Saved Models/Dataframes/courses.pkl')
     demograph = pd.read_pickle('Saved Models/Dataframes/demograph.pkl')
+    courses["Course Name"] = courses["Parent Subject Code"].map(str) + courses["Parent Course No"]
+    cname = courses["Course Name"].unique().tolist()[:-1]
+    students = courses['SubjectID'].nunique()
+    print(students)
+    print(len(cname))
     explor = Explor(terms, courses, demograph)
     explor.analysis()
 
+# train the recommendation engine
 if args.train:
     train = Train(pd.read_pickle('Saved Models/Dataframes/courses.pkl'))
     train.init_training_set(pd.read_pickle('Saved Models/Dataframes/demograph.pkl'))
     train.train_model()
 
-if args.linreg:
-    os.system('python linearregression.py')
-
+# the student information function
 if args.graph == 'student':
     terms = pd.read_pickle('Saved Models/Dataframes/terms_in.pkl')
     courses = pd.read_pickle('Saved Models/Dataframes/courses.pkl')
@@ -93,8 +95,8 @@ if args.graph == 'student':
     dis_list = list(dict.fromkeys(dis_list))
     if args.year_filter is not None:
         start_year, end_year = args.year_filter
-        year_list = ['hi'] * (end_year-start_year)
-        for i in range(start_year, end_year):
+        year_list = [str(end_year)] * (end_year+1-start_year)
+        for i in range(start_year, end_year+1):
             year_list[i-start_year] = str(i)
     else:
         year_list = None
@@ -102,6 +104,7 @@ if args.graph == 'student':
                        args.gender_filter, args.country_filter, args.ethnic_filter, args.current_term, year_list, args.course_number, args.probation_filter, 'SD')
     info.information()
 
+# the course information function
 if args.graph == 'course':
     terms = pd.read_pickle('Saved Models/Dataframes/terms_in.pkl')
     courses = pd.read_pickle('Saved Models/Dataframes/courses.pkl')
@@ -123,8 +126,8 @@ if args.graph == 'course':
     dis_list = list(dict.fromkeys(dis_list))
     if args.year_filter is not None:
         start_year, end_year = args.year_filter
-        year_list = ['hi'] * (end_year-start_year)
-        for i in range(start_year, end_year):
+        year_list = [str(end_year)] * (end_year+1-start_year)
+        for i in range(start_year, end_year+1):
             year_list[i-start_year] = str(i)
     else:
         year_list = None

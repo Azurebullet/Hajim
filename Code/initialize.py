@@ -16,6 +16,8 @@ class Init():
         terms, courses, demograph = self.readData()
         termsinformation=terms
         termsinformation['probation']=0
+
+        # generating new labels
         for i in courses.itertuples():
             if i[-1] == "PROBATION":
                 termsinformation.at[i.Index, 'probation'] = 1
@@ -35,5 +37,4 @@ class Init():
         courses.to_pickle('../Saved Models/Dataframes/courses.pkl')
         demograph.to_pickle('../Saved Models/Dataframes/demograph.pkl')
         termsinformation.to_pickle('../Saved Models/Dataframes/terms_in.pkl')
-        #feature_matrix.to_pickle('./Saved Models/features.pkl')
         return terms, courses, demograph,termsinformation
