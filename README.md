@@ -6,6 +6,7 @@ By the end of this document, you should be able to use this program to
 - input a student ID, generate the recommended courses and historical supportive informations
 - input a course number, see the discipline based grade distribution of the course
 
+示例输出在graph文件夹
 ### Environment Settings
 
 At the very beginning, please have your python3 programming language properly installed on your computer, and add it to your $PATH. We recommend you to install python by the free and open python distribution [Anaconda](https://www.anaconda.com/distribution/), but you can try other methods at your own preferences.
